@@ -67,4 +67,4 @@ USING (bucket_id = 'work-order-images');
 
 CREATE POLICY "Uploaders can delete their images"
 ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'work-order-images' AND auth.uid()::text = owner);
+USING (bucket_id = 'work-order-images' AND auth.uid() = owner::uuid);
