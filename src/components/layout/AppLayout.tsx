@@ -58,7 +58,7 @@ export function AppLayout() {
             <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary">
               <HardHat className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-sm">Mainza Maintenance</span>
+            <span className="font-bold text-sm">ZAI Maintenance</span>
           </div>
           <div className="ml-auto text-xs text-muted-foreground truncate max-w-24">
             {profile?.full_name?.split(' ')[0]}

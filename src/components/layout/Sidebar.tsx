@@ -73,7 +73,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           <HardHat className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold text-foreground leading-none">Mainza</p>
+          <p className="text-sm font-bold text-foreground leading-none">ZAI</p>
           <p className="text-xs text-muted-foreground leading-none mt-0.5">Maintenance</p>
         </div>
         {/* Close button — only visible on mobile */}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -101,7 +101,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-primary shadow-lg mb-4">
             <HardHat className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold">Mainza Maintenance</h1>
+          <h1 className="text-2xl font-bold">ZAI Maintenance</h1>
           <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
         </div>
 
@@ -186,9 +186,8 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-muted-foreground mt-4">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-primary font-medium hover:underline">Register</Link>
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              Contact your administrator to get access.
             </p>
           </CardContent>
         </Card>

@@ -17,4 +17,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * explicitly in each hook/page using the types from database.types.ts.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const supabase = createClient<any>(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient<any>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    /**
+     * persistSession: false — session is kept in memory only.
+     * Refreshing the page logs the user out automatically.
+     * This is intentional for security in shared/industrial environments.
+     */
+    persistSession: false,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  },
+})
