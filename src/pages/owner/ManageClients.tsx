@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Users, Plus, Phone, Mail, Building2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Users, Plus, Phone, Building2, Loader2, Eye, EyeOff } from 'lucide-react'
+import { sendWelcomeEmail } from '@/lib/email'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -84,6 +85,15 @@ export default function ManageClients() {
           company_id: data.company_id,
         }).eq('id', authData.user.id)
       }
+
+      // Send welcome email with credentials
+      await sendWelcomeEmail({
+        to_email: data.email,
+        to_name: data.full_name,
+        role: 'Client',
+        login_email: data.email,
+        temp_password: data.password,
+      })
 
       setSuccess(`✅ Client account created! Login: ${data.email} / Password: ${data.password}`)
       reset()

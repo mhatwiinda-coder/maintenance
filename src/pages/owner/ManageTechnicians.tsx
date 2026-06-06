@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Loader2, User, Phone, Plus, Eye, EyeOff, Wrench } from 'lucide-react'
+import { Loader2, Phone, Plus, Eye, EyeOff, Wrench } from 'lucide-react'
+import { sendWelcomeEmail } from '@/lib/email'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -89,6 +90,15 @@ export default function ManageTechnicians() {
           phone: data.phone || null,
         }).eq('id', authData.user.id)
       }
+
+      // Send welcome email with credentials
+      await sendWelcomeEmail({
+        to_email: data.email,
+        to_name: data.full_name,
+        role: 'Technician',
+        login_email: data.email,
+        temp_password: data.password,
+      })
 
       setSuccess(`✅ Technician account created!\nLogin: ${data.email}\nPassword: ${data.password}`)
       reset()

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, PlayCircle, StopCircle, CheckCircle, Clock, User, Phone } from 'lucide-react'
+import { ArrowLeft, Loader2, PlayCircle, StopCircle, CheckCircle, Clock, User, Phone, ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PriorityBadge } from '@/components/shared/PriorityBadge'
+import { ImageGallery } from '@/components/shared/ImageGallery'
+import { sendStatusEmail } from '@/lib/email'
 import { formatDate, formatDateTime, formatDuration } from '@/lib/utils'
 import type { WorkOrder, TimeLog } from '@/lib/database.types'
 
@@ -63,6 +65,19 @@ export default function JobDetail() {
       work_order_id: wo.id, old_status: wo.status, new_status: 'in_progress', changed_by: profile.id,
     })
 
+    // Email client: work has started
+    const clientProfile = wo.client as { full_name?: string; email?: string } | null
+    if (clientProfile?.email) {
+      await sendStatusEmail({
+        to_email: clientProfile.email,
+        to_name: clientProfile.full_name ?? 'Client',
+        job_title: wo.title,
+        status: 'In Progress',
+        message: `Good news! Your technician has arrived and work has started on your job.`,
+        technician_name: profile.full_name,
+      })
+    }
+
     setSaving(false)
     if (tl) setActiveLog(tl as TimeLog)
     fetchAll(wo.id)
@@ -81,6 +96,21 @@ export default function JobDetail() {
     await supabase.from('work_order_status_history').insert({
       work_order_id: wo.id, old_status: 'in_progress', new_status: 'completed', changed_by: profile.id, note: notes || null,
     })
+
+    // Email client: job completed
+    const clientProfile = wo.client as { full_name?: string; email?: string } | null
+    if (clientProfile?.email) {
+      await sendStatusEmail({
+        to_email: clientProfile.email,
+        to_name: clientProfile.full_name ?? 'Client',
+        job_title: wo.title,
+        status: 'Completed',
+        message: notes
+          ? `Your maintenance job has been completed. Technician notes: "${notes}"`
+          : 'Your maintenance job has been successfully completed.',
+        technician_name: profile.full_name,
+      })
+    }
 
     setSaving(false)
     setActiveLog(null)
@@ -131,6 +161,18 @@ export default function JobDetail() {
               <span>Preferred date: {formatDate(wo.preferred_date)}</span>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Job Photos uploaded by client */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" /> Job Photos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ImageGallery workOrderId={wo.id} />
         </CardContent>
       </Card>
 

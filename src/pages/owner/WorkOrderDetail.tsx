@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Loader2, CheckCircle, XCircle, User, Clock } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle, XCircle, User, Clock, ImageIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PriorityBadge } from '@/components/shared/PriorityBadge'
+import { ImageGallery } from '@/components/shared/ImageGallery'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { formatDate, formatDateTime, formatDuration } from '@/lib/utils'
+import { sendStatusEmail } from '@/lib/email'
 import type { WorkOrder, WorkOrderStatusHistory, TimeLog, Profile } from '@/lib/database.types'
 
 export default function OwnerWorkOrderDetail() {
@@ -67,6 +69,33 @@ export default function OwnerWorkOrderDetail() {
         changed_by: profile.id,
         note: ownerNotes || null,
       })
+
+      // Send email notification to client
+      const clientProfile = wo.client as { full_name?: string; email?: string } | null
+      if (clientProfile?.email) {
+        if (newStatus === 'accepted') {
+          await sendStatusEmail({
+            to_email: clientProfile.email,
+            to_name: clientProfile.full_name ?? 'Client',
+            job_title: wo.title,
+            status: 'Accepted',
+            message: ownerNotes
+              ? `Your job has been accepted. Note from owner: ${ownerNotes}`
+              : 'Your maintenance request has been reviewed and accepted. We will assign a technician shortly.',
+          })
+        } else if (newStatus === 'assigned' && techId) {
+          const tech = technicians.find(t => t.id === techId)
+          await sendStatusEmail({
+            to_email: clientProfile.email,
+            to_name: clientProfile.full_name ?? 'Client',
+            job_title: wo.title,
+            status: 'Accepted',
+            message: `A technician has been assigned to your job.`,
+            technician_name: tech?.full_name,
+          })
+        }
+      }
+
       fetchAll(wo.id)
     }
     setSaving(false)
@@ -107,6 +136,18 @@ export default function OwnerWorkOrderDetail() {
               <p className="font-medium flex items-center gap-1"><Clock className="h-3 w-3" />{formatDuration(totalMins)}</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Client Uploaded Images */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-muted-foreground" /> Job Photos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ImageGallery workOrderId={wo.id} />
         </CardContent>
       </Card>
 
