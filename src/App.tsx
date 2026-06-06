@@ -14,6 +14,8 @@ import OwnerDashboard from '@/pages/owner/OwnerDashboard'
 import AllWorkOrders from '@/pages/owner/AllWorkOrders'
 import OwnerWorkOrderDetail from '@/pages/owner/WorkOrderDetail'
 import ManageTechnicians from '@/pages/owner/ManageTechnicians'
+import ManageCompanies from '@/pages/owner/ManageCompanies'
+import ManageClients from '@/pages/owner/ManageClients'
 
 // Client pages
 import ClientDashboard from '@/pages/client/ClientDashboard'
@@ -57,6 +59,8 @@ export default function App() {
               <Route path="/owner" element={<OwnerDashboard />} />
               <Route path="/owner/work-orders" element={<AllWorkOrders />} />
               <Route path="/owner/work-orders/:id" element={<OwnerWorkOrderDetail />} />
+              <Route path="/owner/companies" element={<ManageCompanies />} />
+              <Route path="/owner/clients" element={<ManageClients />} />
               <Route path="/owner/technicians" element={<ManageTechnicians />} />
             </Route>
 

@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ClipboardList, Users, PlusCircle,
-  LogOut, HardHat, ChevronRight,
+  LogOut, HardHat, ChevronRight, Building2, Wrench, UserPlus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,7 +12,9 @@ import { Separator } from '@/components/ui/separator'
 const ownerLinks = [
   { to: '/owner', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/owner/work-orders', label: 'All Work Orders', icon: ClipboardList },
-  { to: '/owner/technicians', label: 'Technicians', icon: Users },
+  { to: '/owner/companies', label: 'Companies', icon: Building2 },
+  { to: '/owner/clients', label: 'Clients', icon: Users },
+  { to: '/owner/technicians', label: 'Technicians', icon: Wrench },
 ]
 
 const clientLinks = [

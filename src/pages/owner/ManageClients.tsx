@@ -1,39 +1,41 @@
 import { useEffect, useState } from 'react'
-import { Loader2, User, Phone, Plus, Eye, EyeOff, Wrench } from 'lucide-react'
+import { Users, Plus, Phone, Mail, Building2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import type { Profile } from '@/lib/database.types'
+import type { Profile, Company } from '@/lib/database.types'
 
 const schema = z.object({
   full_name: z.string().min(2, 'Full name is required'),
   email: z.string().email('Valid email is required'),
   phone: z.string().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  company_id: z.string().min(1, 'Please select a company'),
 })
 type FormData = z.infer<typeof schema>
 
-interface TechWithCount extends Profile { active_jobs: number; completed_jobs: number }
-
-export default function ManageTechnicians() {
-  const [technicians, setTechnicians] = useState<TechWithCount[]>([])
+export default function ManageClients() {
+  const [clients, setClients] = useState<Profile[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState('')
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -41,24 +43,12 @@ export default function ManageTechnicians() {
 
   async function fetchData() {
     setLoading(true)
-    const { data: techs } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'technician')
-      .order('full_name')
-
-    if (techs) {
-      const enriched = await Promise.all(
-        (techs as Profile[]).map(async (t) => {
-          const [{ count: active }, { count: done }] = await Promise.all([
-            supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('technician_id', t.id).in('status', ['assigned', 'in_progress']),
-            supabase.from('work_orders').select('*', { count: 'exact', head: true }).eq('technician_id', t.id).eq('status', 'completed'),
-          ])
-          return { ...t, active_jobs: active ?? 0, completed_jobs: done ?? 0 }
-        })
-      )
-      setTechnicians(enriched)
-    }
+    const [{ data: clientData }, { data: companyData }] = await Promise.all([
+      supabase.from('profiles').select('*, companies(name)').eq('role', 'client').order('full_name'),
+      supabase.from('companies').select('*').order('name'),
+    ])
+    if (clientData) setClients(clientData as Profile[])
+    if (companyData) setCompanies(companyData as Company[])
     setLoading(false)
   }
 
@@ -68,7 +58,7 @@ export default function ManageTechnicians() {
     setSuccess(null)
 
     try {
-      // Use temp client — owner session stays intact
+      // Use a temporary client instance so owner session is NOT affected
       const tempClient = createClient(
         import.meta.env.VITE_SUPABASE_URL as string,
         import.meta.env.VITE_SUPABASE_ANON_KEY as string
@@ -78,22 +68,28 @@ export default function ManageTechnicians() {
         email: data.email,
         password: data.password,
         options: {
-          data: { full_name: data.full_name, role: 'technician' },
+          data: {
+            full_name: data.full_name,
+            role: 'client',
+          },
         },
       })
 
       if (authError) { setServerError(authError.message); setSaving(false); return }
 
+      // Update the profile with phone and company_id
       if (authData.user) {
         await supabase.from('profiles').update({
           phone: data.phone || null,
+          company_id: data.company_id,
         }).eq('id', authData.user.id)
       }
 
-      setSuccess(`✅ Technician account created!\nLogin: ${data.email}\nPassword: ${data.password}`)
+      setSuccess(`✅ Client account created! Login: ${data.email} / Password: ${data.password}`)
       reset()
+      setSelectedCompany('')
       fetchData()
-    } catch {
+    } catch (e) {
       setServerError('Failed to create account. Please try again.')
     }
     setSaving(false)
@@ -101,18 +97,18 @@ export default function ManageTechnicians() {
 
   function handleOpenChange(val: boolean) {
     setOpen(val)
-    if (!val) { reset(); setServerError(null); setSuccess(null) }
+    if (!val) { reset(); setServerError(null); setSuccess(null); setSelectedCompany('') }
   }
 
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Technicians</h1>
-          <p className="text-muted-foreground text-sm mt-1">{technicians.length} registered technician{technicians.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold">Client Accounts</h1>
+          <p className="text-muted-foreground text-sm mt-1">{clients.length} registered client{clients.length !== 1 ? 's' : ''}</p>
         </div>
         <Button onClick={() => setOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> Onboard Technician
+          <Plus className="h-4 w-4" /> Add Client
         </Button>
       </div>
 
@@ -120,48 +116,44 @@ export default function ManageTechnicians() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : technicians.length === 0 ? (
+      ) : clients.length === 0 ? (
         <Card>
           <CardContent className="py-14 text-center text-muted-foreground">
-            <Wrench className="h-10 w-10 mx-auto mb-3 opacity-20" />
-            <p className="font-medium">No technicians yet</p>
-            <p className="text-sm mt-1">Onboard your first field technician</p>
+            <Users className="h-10 w-10 mx-auto mb-3 opacity-20" />
+            <p className="font-medium">No clients yet</p>
+            <p className="text-sm mt-1">Create client accounts and link them to their companies</p>
             <Button className="mt-4 gap-2" onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" /> Onboard Technician
+              <Plus className="h-4 w-4" /> Add Client
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {technicians.map(t => {
-            const initials = t.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+          {clients.map(c => {
+            const initials = c.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+            const company = c.companies as { name?: string } | null
             return (
-              <Card key={t.id}>
+              <Card key={c.id}>
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-green-100 text-green-800 font-semibold text-sm">{initials}</AvatarFallback>
+                      <AvatarFallback className="bg-blue-100 text-blue-800 font-semibold text-sm">{initials}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{t.full_name}</p>
-                      <Badge variant="success" className="text-xs mt-0.5">Technician</Badge>
+                      <p className="font-semibold text-sm truncate">{c.full_name}</p>
+                      <Badge variant="info" className="text-xs mt-0.5">Client</Badge>
                     </div>
                   </div>
-                  {t.phone && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-3">
-                      <Phone className="h-3 w-3" />{t.phone}
+                  {company?.name && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
+                      <Building2 className="h-3 w-3" />{company.name}
                     </p>
                   )}
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className={`rounded-lg p-2.5 ${t.active_jobs > 0 ? 'bg-blue-50' : 'bg-muted/50'}`}>
-                      <p className={`text-lg font-bold ${t.active_jobs > 0 ? 'text-blue-800' : 'text-foreground'}`}>{t.active_jobs}</p>
-                      <p className={`text-xs ${t.active_jobs > 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>Active</p>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-2.5">
-                      <p className="text-lg font-bold text-green-800">{t.completed_jobs}</p>
-                      <p className="text-xs text-green-600">Done</p>
-                    </div>
-                  </div>
+                  {c.phone && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Phone className="h-3 w-3" />{c.phone}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )
@@ -169,18 +161,18 @@ export default function ManageTechnicians() {
         </div>
       )}
 
-      {/* Onboard Technician Dialog */}
+      {/* Add Client Dialog */}
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Onboard New Technician</DialogTitle>
-            <DialogDescription>Create a login account for the technician. Share credentials with them directly.</DialogDescription>
+            <DialogTitle>Onboard New Client</DialogTitle>
+            <DialogDescription>Create a login account for your client. Share the credentials with them directly.</DialogDescription>
           </DialogHeader>
 
           {success ? (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800 whitespace-pre-line font-medium">{success}</div>
-              <p className="text-xs text-muted-foreground">Share these credentials securely with the technician.</p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800 font-medium">{success}</div>
+              <p className="text-xs text-muted-foreground">Make sure to share these credentials with the client securely.</p>
               <DialogFooter>
                 <Button onClick={() => { setSuccess(null); reset() }}>Add Another</Button>
                 <Button variant="outline" onClick={() => handleOpenChange(false)}>Done</Button>
@@ -190,12 +182,12 @@ export default function ManageTechnicians() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Full Name *</Label>
-                <Input placeholder="Technician full name" {...register('full_name')} />
+                <Input placeholder="Client contact person name" {...register('full_name')} />
                 {errors.full_name && <p className="text-xs text-destructive">{errors.full_name.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label>Email Address *</Label>
-                <Input type="email" placeholder="tech@mainza.com" {...register('email')} />
+                <Input type="email" placeholder="client@company.com" {...register('email')} />
                 {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-1.5">
@@ -203,11 +195,27 @@ export default function ManageTechnicians() {
                 <Input placeholder="+260 97 000 0000" {...register('phone')} />
               </div>
               <div className="space-y-1.5">
+                <Label>Company *</Label>
+                <Select value={selectedCompany} onValueChange={v => { setSelectedCompany(v); setValue('company_id', v) }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client company..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.length === 0 ? (
+                      <SelectItem value="none" disabled>No companies yet — add one first</SelectItem>
+                    ) : (
+                      companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.company_id && <p className="text-xs text-destructive">{errors.company_id.message}</p>}
+              </div>
+              <div className="space-y-1.5">
                 <Label>Temporary Password *</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Set a login password"
+                    placeholder="Set a password for the client"
                     {...register('password')}
                     className="pr-10"
                   />
@@ -223,7 +231,7 @@ export default function ManageTechnicians() {
                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
                 <Button type="submit" disabled={saving} className="gap-2">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Create Account
+                  Create Client Account
                 </Button>
               </DialogFooter>
             </form>
