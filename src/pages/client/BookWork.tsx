@@ -183,7 +183,7 @@ export default function BookWork() {
                 onChange={e => handleImageFiles(e.target.files)} />
 
               {images.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 mt-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
                   {images.map(({ preview }, i) => (
                     <div key={i} className="relative aspect-square rounded-lg overflow-hidden border bg-muted">
                       <img src={preview} alt="" className="w-full h-full object-cover" />

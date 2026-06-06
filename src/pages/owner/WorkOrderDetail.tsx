@@ -125,7 +125,7 @@ export default function OwnerWorkOrderDetail() {
 
       {/* Details */}
       <Card>
-        <CardContent className="p-5 grid grid-cols-2 gap-4 text-sm">
+        <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div><p className="text-muted-foreground text-xs mb-0.5">Client</p><p className="font-medium flex items-center gap-1"><User className="h-3 w-3" />{(wo.client as { full_name?: string })?.full_name ?? '—'}</p></div>
           <div><p className="text-muted-foreground text-xs mb-0.5">Preferred Date</p><p className="font-medium">{formatDate(wo.preferred_date)}</p></div>
           <div><p className="text-muted-foreground text-xs mb-0.5">Booked</p><p className="font-medium">{formatDateTime(wo.created_at)}</p></div>

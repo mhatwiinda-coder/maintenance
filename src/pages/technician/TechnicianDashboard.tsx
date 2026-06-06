@@ -50,7 +50,7 @@ export default function TechnicianDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className={inProgress.length > 0 ? 'border-blue-200 bg-blue-50/50' : ''}>
           <CardContent className="p-5">
             <p className={`text-sm ${inProgress.length > 0 ? 'text-blue-700' : 'text-muted-foreground'}`}>In Progress</p>
