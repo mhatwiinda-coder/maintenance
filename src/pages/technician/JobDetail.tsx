@@ -29,8 +29,14 @@ export default function JobDetail() {
   async function fetchAll(woId: string) {
     setLoading(true)
     const [{ data: woData }, { data: tlData }] = await Promise.all([
-      supabase.from('work_orders').select('*, client:profiles!client_id(full_name, phone)').eq('id', woId).single(),
-      supabase.from('time_logs').select('*').eq('work_order_id', woId).eq('technician_id', profile?.id ?? '').order('start_time', { ascending: false }),
+      supabase.from('work_orders')
+        .select('*, client:profiles!client_id(id, full_name, phone)')
+        .eq('id', woId)
+        .single(),
+      supabase.from('time_logs')
+        .select('*')
+        .eq('work_order_id', woId)
+        .order('start_time', { ascending: false }),
     ])
     if (woData) setWo(woData as WorkOrder)
     if (tlData) {
@@ -109,7 +115,9 @@ export default function JobDetail() {
         <CardContent className="p-5 space-y-3 text-sm">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{client?.full_name ?? '—'}</span>
+            <span className="font-medium">
+              {client?.full_name ? client.full_name : 'Client (no profile linked)'}
+            </span>
           </div>
           {client?.phone && (
             <div className="flex items-center gap-2">

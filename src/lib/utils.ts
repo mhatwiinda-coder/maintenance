@@ -22,7 +22,8 @@ export function timeAgo(date: string | Date | null | undefined): string {
 }
 
 export function formatDuration(minutes: number | null | undefined): string {
-  if (!minutes) return '—'
+  if (minutes === null || minutes === undefined) return '—'
+  if (minutes === 0) return '< 1 min'
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   if (h === 0) return `${m}m`
