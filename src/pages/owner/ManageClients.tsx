@@ -78,12 +78,16 @@ export default function ManageClients() {
 
       if (authError) { setServerError(authError.message); setSaving(false); return }
 
-      // Update the profile with phone and company_id
+      // Always explicitly upsert the profile — never rely on trigger alone
       if (authData.user) {
-        await supabase.from('profiles').update({
+        await supabase.from('profiles').upsert({
+          id: authData.user.id,
+          full_name: data.full_name,
+          role: 'client',
+          email: data.email,
           phone: data.phone || null,
           company_id: data.company_id,
-        }).eq('id', authData.user.id)
+        }, { onConflict: 'id' })
       }
 
       // Send welcome email with credentials

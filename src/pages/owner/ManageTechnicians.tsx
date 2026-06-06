@@ -85,10 +85,15 @@ export default function ManageTechnicians() {
 
       if (authError) { setServerError(authError.message); setSaving(false); return }
 
+      // Always explicitly upsert the profile — never rely on trigger alone
       if (authData.user) {
-        await supabase.from('profiles').update({
+        await supabase.from('profiles').upsert({
+          id: authData.user.id,
+          full_name: data.full_name,
+          role: 'technician',
+          email: data.email,
           phone: data.phone || null,
-        }).eq('id', authData.user.id)
+        }, { onConflict: 'id' })
       }
 
       // Send welcome email with credentials

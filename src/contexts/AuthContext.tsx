@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fullName: string,
     role: UserRole
   ) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -85,6 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     if (error) return { error: error.message }
+
+    // Explicitly upsert profile — never rely on trigger alone
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: fullName,
+        role,
+        email,
+      }, { onConflict: 'id' })
+    }
+
     return { error: null }
   }
 
