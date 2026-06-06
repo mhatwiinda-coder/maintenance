@@ -23,7 +23,8 @@ export async function sendWelcomeEmail(params: {
   }
   try {
     await emailjs.send(SERVICE_ID, WELCOME_TPL, {
-      to_email:      params.to_email,
+      email:         params.to_email,   // matches {{email}} in EmailJS template
+      to_email:      params.to_email,   // fallback
       to_name:       params.to_name,
       role:          params.role,
       login_email:   params.login_email,
@@ -51,7 +52,8 @@ export async function sendStatusEmail(params: {
   }
   try {
     await emailjs.send(SERVICE_ID, STATUS_TPL, {
-      to_email:         params.to_email,
+      email:            params.to_email,   // matches {{email}} in EmailJS template
+      to_email:         params.to_email,   // fallback
       to_name:          params.to_name,
       job_title:        params.job_title,
       status:           params.status,
