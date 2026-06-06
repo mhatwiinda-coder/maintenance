@@ -87,13 +87,23 @@ export default function ManageTechnicians() {
 
       // Always explicitly upsert the profile — never rely on trigger alone
       if (authData.user) {
-        await supabase.from('profiles').upsert({
+        const { error: upsertErr } = await supabase.from('profiles').upsert({
           id: authData.user.id,
           full_name: data.full_name,
           role: 'technician',
           email: data.email,
           phone: data.phone || null,
         }, { onConflict: 'id' })
+
+        // Fallback: retry without email if column not yet added via migration
+        if (upsertErr) {
+          await supabase.from('profiles').upsert({
+            id: authData.user.id,
+            full_name: data.full_name,
+            role: 'technician',
+            phone: data.phone || null,
+          }, { onConflict: 'id' })
+        }
       }
 
       // Send welcome email with credentials
